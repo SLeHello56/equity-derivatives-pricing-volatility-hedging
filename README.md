@@ -1,5 +1,12 @@
 # Equity Derivatives Pricing, Volatility & Hedging (Python)
 
+**[▶ Launch the interactive Streamlit demo](https://equity-derivatives-pricing-volatility-hedging-rznaftgc3qtjysnb.streamlit.app)** — try the dashboard in your browser, no Python installation needed.
+
+**Explore:** [Python source](src/) · [Streamlit app code](app.py) · [Unit tests](tests/) · [Chart preview](assets/equity-options-preview.png) · [Run instructions](#run)
+
+*The default example uses synthetic inputs; this is educational research, not live trading or an investment recommendation.*
+
+
 **Front-office-oriented research prototype**: Black–Scholes vanilla calls/puts and Greeks; antithetic Monte Carlo pricing for arithmetic-average Asian calls and discretely monitored up-and-out calls; 25Δ risk-reversal / butterfly quote analytics; and financed discrete delta-hedging P&L for a short vanilla call.
 
 ![Illustrative research preview](assets/equity-options-preview.png)
