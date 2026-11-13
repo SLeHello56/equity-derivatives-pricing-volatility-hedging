@@ -1,0 +1,42 @@
+import streamlit as st
+import pandas as pd
+from equity_derivatives.pricing import bs_price,bs_greeks,mc_paths,mc_option,rr_butterfly,hedge_short_call
+from equity_derivatives.historical import fetch_fred
+st.set_page_config(page_title='Equity Derivatives Lab',layout='wide')
+st.title('Equity Derivatives — Pricing, Volatility & Hedging')
+st.caption('Educational research. Pricing/hedging use synthetic GBM; optional real FRED index context is NOT an options market-data feed.')
+a,b,c,d=st.columns(4)
+s=a.number_input('Spot',min_value=1.0,value=100.0)
+k=b.number_input('Strike',min_value=1.0,value=100.0)
+t=c.slider('Maturity (years)',0.1,2.0,1.0,0.1)
+v=d.slider('Volatility',0.05,1.0,0.25,0.01)
+kind=st.selectbox('Option type',['call','put'])
+rate=st.number_input('Continuously compounded rate',value=0.03,step=0.01)
+pr=bs_price(s,k,t,rate,v,kind)
+g=bs_greeks(s,k,t,rate,v,kind)
+st.metric('Theoretical vanilla price',f'{pr:.3f}')
+st.dataframe(pd.DataFrame([g]).T.rename(columns={0:'value'}))
+st.caption('Vega per 1.00 change in vol; theta per year. Delta per unit underlying.')
+st.subheader('Monte Carlo exotic call')
+structure=st.selectbox('Payoff',['asian','up-and-out','vanilla'])
+barrier=st.number_input('Barrier (up-and-out only)',min_value=1.0,value=125.0)
+paths=mc_paths(s,t,rate,v)
+price,se=mc_option(paths,k,t,rate,structure,barrier if structure=='up-and-out' else None)
+st.metric('Monte Carlo price ± 1.96 SE',f'{price:.3f} ± {1.96*se:.3f}')
+st.line_chart(pd.DataFrame(paths[:20].T))
+st.subheader('25-delta smile convention — manual indicative inputs')
+atm=st.slider('ATM IV',0.05,0.8,0.25)
+call=st.slider('25Δ call IV',0.05,0.8,0.23)
+put=st.slider('25Δ put IV',0.05,0.8,0.28)
+st.json(rr_butterfly(atm,call,put))
+st.subheader('Short call discrete hedge P&L (illustrative)')
+cost=st.slider('Transaction costs (bps of share notional)',0.0,20.0,1.0)
+pnls=[hedge_short_call(x,k,t,rate,v,cost) for x in paths[:300]]
+st.line_chart(pd.Series(pnls,name='hedged_terminal_pnl'))
+st.write('Mean sample hedge P&L:',round(float(pd.Series(pnls).mean()),4))
+if st.checkbox('Show real historical market context (requires internet)'):
+    try:
+        df=fetch_fred(st.selectbox('FRED series',['SP500','VIXCLS']))
+        st.line_chart(df.set_index('date')['value'])
+        st.caption('FRED context only; VIXCLS is not a matched strike-level implied volatility quote.')
+    except Exception as e:st.warning(f'Could not fetch historical context: {e}')
